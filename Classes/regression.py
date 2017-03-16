@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import calendar
 
-
+#In this class is implemented the algorithm to determine the parameters of a 3 param heating change point model
 #inspire from http://www.eeperformance.org/uploads/8/6/5/0/8650231/ashrae_-_inverse_modeling_toolkit_-_numerical_algorithms.pdf
 
 
