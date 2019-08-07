@@ -38,7 +38,7 @@ class Regression:
     def _model(self, df, normalize=True, verbose_eval = True):
         df.columns=["Energy", "Driver"]
         self.data = df.copy()
-        
+        print("update 3")
         if normalize:
             X_normalizer, Y_normalizer = self._normalized_by_mean(df)
         else:
@@ -51,7 +51,7 @@ class Regression:
         Y_mean = df["Energy"].mean()
 
         beta2 = self._get_beta2(df)
-        beta1 = (Y_mean*X_mean - self.beta2 * X_mean)
+        beta1 = Y_mean - abs(self.beta2 * X_mean)
         beta3=X_min
 
         #First iteration
@@ -69,6 +69,7 @@ class Regression:
         self.beta2 = self._get_beta2(sliced_df)
         
         #End results
+
         self.beta2 =self.beta2*Y_normalizer/X_normalizer
         self.beta1 = self.beta1*Y_normalizer
         self.beta3=self.beta3*X_normalizer
@@ -83,11 +84,11 @@ class Regression:
         X_min_new=X_min
         min_RMSE=self._get_RMSE(df)
         if verbose_eval:
-            print("STARTING POINT" , "RMSE:", min_RMSE, "equation: Y=", beta1, "+", beta2,"*X", "(T-", beta3, ")")
+            print("STARTING POINT" , "RMSE:", min_RMSE, "equation: Y=", beta1, "+", beta2,"*", "(T-", beta3, ")")
 
         #beta1=beta1+abs(beta2*interval)
         
-        for step in range(0, range_size, 1):
+        for step in range(1, range_size+1, 1):
             
             beta3=X_min+step*interval
             
@@ -97,7 +98,7 @@ class Regression:
             df["Predicted"]=[beta1+beta2*(x-beta3) if x<beta3 else beta1 for x in df["Driver"].values]
             RMSE=self._get_RMSE(df)
             if verbose_eval:
-                print("step: ", step, "RMSE:", RMSE, "equation: Y=", beta1, "+", beta2,"*X", "(T-", beta3, ")")
+                print("step: ", step, "RMSE:", RMSE, "equation: Y=", beta1, "+", beta2,"*", "(T-", beta3, ")")
 
             if RMSE<min_RMSE:
                 
@@ -118,24 +119,26 @@ class Regression:
         return Sxy/Sxx
 
     def _get_RMSE(self, df):
-        return (((df.Predicted - df.Energy) ** 2).sum()/(df.shape[0]-2)) ** .5
+        return (((df.Energy- df.Predicted) ** 2).sum()/(df.shape[0] -2)) ** .5
 
     def _print_steps(self,df, step, beta1, beta2, beta3):
         print("step: ", step, "RMSE:", self._get_RMSE(df), "Change point: ", beta1, beta2, beta3)
-    
+
+    def predict(self, x):
+        y=[(self.beta1+self.beta2*(val-self.beta3)) if val<self.beta3 else self.beta1 for val in x]
+        return y
         
     def _plot(self):
         x_data = "Driver"
         y_data = "Energy"
         fig, ax = plt.subplots(figsize=(7, 3))
         sns.regplot(x=x_data, y=y_data, data=self.data, fit_reg=False, ax=ax)
-        std=self.data["Driver"].std()/5
-        x = np.linspace(self.data["Driver"].min()-std, self.data["Driver"].max()+std, 10)
+        x = self.data["Driver"].sort_values(ascending=True).values
         y=[(self.beta1+self.beta2*(val-self.beta3)) if val<self.beta3 else self.beta1 for val in x]
         plt.plot(x, y, color='red')
         ax.set_xlabel("Driver")
         ax.set_ylabel("Energy")
-        print("equation: Y=", "{:f}".format(self.beta1)+ "{:+f}".format(self.beta2)+"*X*(T-"+ "{:f}".format(self.beta3), ")")
+        print("equation: Y=", "{:f}".format(self.beta1)+ "{:+f}".format(self.beta2)+"*(T-"+ "{:f}".format(self.beta3), ")")
 
 
 
